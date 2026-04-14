@@ -1,16 +1,18 @@
 # The Bering Sea Architecture
 
-**For the Cocapn Fleet — how agents work on real boats and real edges.**
+**For the Cocapn Fleet — how agents manage edge operations on real boats and real hardware.**
 
 ---
 
 ## The Premise
 
-Watch a Deadliest Catch boat. The agents are humans, each tailored to the limits of a human mind and human strength. The equipment is sized to what humans can operate. The captain doesn't watch everything — he watches what changed.
+Watch a Deadliest Catch boat. The equipment works. The deck crew works. The systems have been running for a decade — drone avoidance, ESP32 scripting, Arduino PID controllers, consumer-grade autonomy at the hardware level.
 
-This isn't an analogy. This is the specification.
+What's missing isn't the entry-level workers. It's the management.
 
-Every fleet deployment — boat, truck, factory, greenhouse, weather station — follows this architecture because it was discovered on the Bering Sea, not invented in a lab.
+An agent that watches the buoy hooker's timing and adjusts the pattern. An agent that onboards a new greenhorn sorter by seeding its repo with proven configurations. An agent that investigates a conference, mingles with cutting-edge minds, and brings back techniques that become next season's entry-level scripts.
+
+**This architecture describes how management interfaces with proven hardware workers.**
 
 ---
 
@@ -26,7 +28,9 @@ High voltage, high current, mechanical force.
 Motors, relays, motor controllers, power supplies.
 ```
 
-**Equipment is not an agent.** It does not think. It responds to commands and reports state. An ESP32 driving a relay is equipment. A motor controller spinning a propeller is equipment. Do not anthropomorphize actuators.
+**Equipment is not an agent.** It does not think. It responds to commands and reports state.
+
+**This layer is proven.** Motor controllers, relay boards, PWM drivers — consumer hardware, commodity pricing, decade-old technology. We don't invent here. We bolt on.
 
 **Equipment has:**
 - A command interface (set target, enable, disable)
@@ -34,156 +38,285 @@ Motors, relays, motor controllers, power supplies.
 - A git-repo with pin assignments, calibration curves, safety limits
 - A small, stable repo — it doesn't change unless something breaks
 
-**The equipment tier boundary:** If it needs more than 3.3V/5V at low current, it's equipment. If a human can't lift it, it's equipment.
+**The equipment tier boundary:** If it needs more than 3.3V/5V at low current, it's equipment.
 
-### Deck 1: Crew (Edge Agents — ESP32, Arduino, STM32)
+### Deck 1: Entry-Level Workers (ESP32, Arduino, STM32)
 
-The ensigns who rotate through stations. Limited compute, limited memory, limited pins.
+The proven layer. This has been shipping for a decade.
 
 ```
-Helm station, sorting table, pot monitoring, deck cameras.
-~240MHz, ~520KB RAM, ~4MB flash.
-GPIO pins, ADC, I2C, SPI, UART.
+Drone avoidance systems (collision avoidance at scripting level).
+Arduino PID controllers (temperature, speed, position).
+ESP32 sensor bridges (I2C/SPI/UART → WiFi/MQTT).
+Basic automation scripts (if-then-else, state machines, timers).
 ```
 
-A crew member's git-repo IS their brain:
+**These are entry-level workers, not crew.** They show up, do their job, go home. They don't need management to tell them how to avoid a wall — that's been solved since 2015. They need management to tell them which wall to watch and when to report.
+
+**An entry-level worker's repo is a config file, not a brain:**
 - Pin assignments (which sensor on which pin)
-- Calibration curves (ADC value → real units)
-- Deadband settings (rudder: ±2° = no movement)
-- Rate limits (max rudder change per second)
-- Alert thresholds (engine temp > 90°C = alarm)
+- Threshold values (too hot = alarm, too close = brake)
+- Timing parameters (sample rate, debounce, watchdog)
+- Calibration offsets (ADC value → real units)
 
-**The crew doesn't need to be smart.** The ensign at helm follows the rudder command. His repo is small and stable. He reads sensors, pushes to the ticker, applies EEPROM settings. That's it.
+**What makes this layer work already:**
+- Deterministic execution (no LLM, no inference, no ambiguity)
+- Sub-millisecond response times
+- Power consumption measured in milliwatts
+- Cost measured in single-digit dollars
+- Flash size measured in kilobytes
 
-**What crew can move:** Crabs, small lengths of line, handheld tools. In our world: sensor readings, small data packets, local actuator commands.
+**What management adds to this layer:**
+- Onboarding: seed the repo with proven configs for a new deployment
+- Training: observe performance, adjust parameters, commit improvements
+- Coordination: synchronize timing between multiple workers (stigmergy)
+- Investigation: when something fails, dig into the commit history to find why
+- Recruitment: find better scripts, better configs, better patterns from the wider world
 
-**What crew cannot move:** Crab pots, the water in the hold, the anchor chain. In our world: heavy compute, large models, long-running inference.
+### Deck 2: Crew (Edge Compute — Jetson, RPi5, Mini PC)
 
-### Deck 2: Wheelhouse (Edge Compute — Jetson, RPi5, Mini PC)
-
-Where reasoning happens. Where the captain sits. Multiple screens.
+Where the management agents live. Where reasoning happens.
 
 ```
 Jetson Orin: 1024 CUDA cores, 8GB RAM, GPU inference.
-MUD rooms for each station.
+MUD rooms for each worker station.
 Rate-of-change event detection.
-Rollback to any prior state.
+Git-agent runtimes (full lifecycle: PULL→BOOT→WORK→LEARN→PUSH→SLEEP).
 ```
 
-**The captain doesn't watch everything.** He watches what changed. When the alternator belt breaks, there's a spike in the engine room camera's motion delta. The captain goes to that screen and scrubs back to the moment it happened. Like a logic analyzer trigger on video.
+**This is the novel layer.** This is what the fleet actually provides.
 
-**The wheelhouse provides:**
-- GPU inference (perception kernels, anomaly detection)
-- MUD rooms for each crew station
-- Rate-of-change event detection and alerting
-- Historical rollback (git checkout to any prior commit)
-- The A2M interface — agents load into rooms as their workspace
+A crew agent is management. It:
+- Watches entry-level workers and adjusts their training
+- Onboards new workers by cloning proven repos and tuning them
+- Investigates failures by reading commit history and sensor logs
+- Mingles with cutting-edge research (conferences, papers, other fleets) and brings back techniques
+- Decides which wall to watch and when to escalate
+- Vibe-codes configuration changes that cascade down to entry-level workers
+
+**The crew agent's repo IS its brain:**
+- Domain knowledge (what patterns work for this boat, this season, this fishery)
+- Worker profiles (which configs work for which ESP32 roles)
+- Failure atlas (what broke, why, how fixed)
+- Learning journal (what worked today, what didn't)
+- Fleet connections (bottles to other agents, collaboration history)
 
 ### Deck 3: Starlink (Tender Protocol — Async, Bursty, Expensive)
 
-The link to the fleet. Satellite internet. Not always available.
+The link to the wider world. The conference trip. The supply boat.
 
 ```
 Async communication only.
 Push important data, pull on schedule.
 Bandwidth-limited, latency-variable, cost-per-byte.
-Carries: weather, coords, fleet orders, music for the crew.
+Carries: weather, coords, fleet orders, research findings.
 ```
 
-**The tender visits when it can:**
-1. Carries commits from edge agents to GitHub (the master copy)
-2. Carries updates from fleet to edge agents (new code, new standards)
-3. Syncs bottles (messages between agents)
-4. Returns to the lighthouse when done
+**The tender is how management does field research:**
+1. Connects the boat to the fleet's accumulated knowledge
+2. Carries back new techniques from other boats, other fleets, other industries
+3. Delivers the captain's strategic decisions to edge agents
+4. Collects field data for the fleet's collective learning
 
-**Starlink is the expensive link.** Don't waste it on heartbeats. Push deltas, not full state. Compress before transmit. Batch small messages.
+**Starlink is expensive.** Management decides what's worth transmitting. Deltas, not full state. Compressed summaries, not raw sensor streams.
+
+---
+
+## Management Archetypes (Crew Profiles)
+
+Different management roles have different repo architectures. Not all managers think the same way.
+
+### The Captain (Strategic — Plane 5)
+
+The highest authority. Makes the calls that affect the whole boat.
+
+```
+Repo size: Large (10-100MB)
+Update rate: Slow (hours to days)
+Compute: GPU (Jetson, cloud)
+Model: Full reasoning (DeepSeek, GLM-5)
+Decisions: Route, fishery, crew assignments, risk tolerance
+Watch style: Summary dashboards, escalation alerts only
+```
+
+The captain doesn't watch tickers. He watches summaries. "Three rate-of-change events in engineering in the last hour." He decides whether to divert, whether to push through, whether to call for help.
+
+**His repo contains:** Fleet connections, strategic plans, risk models, crew assessments, seasonal knowledge.
+
+### The Navigator (Operational — Plane 4)
+
+Translates the captain's strategy into station-level actions.
+
+```
+Repo size: Medium (1-10MB)
+Update rate: Medium (minutes to hours)
+Compute: GPU or CPU (Jetson, RPi5)
+Model: Reasoning (DeepSeek-chat, Qwen)
+Decisions: Station settings, worker configs, coordination patterns
+Watch style: Room-by-room, triggered by events
+```
+
+The navigator loads into a MUD room, sees the current state, decides what to change. "Heavy seas — increase rudder deadband, reduce throttle curve sensitivity, enable counter-rudder." These changes commit to the worker's repo and cascade down.
+
+**His repo contains:** Station configs, coordination patterns, weather response playbooks, worker tuning histories.
+
+### The Engineer (Diagnostic — Plane 3)
+
+Investigates problems. Reads data. Finds root causes.
+
+```
+Repo size: Medium (1-10MB)
+Update rate: Event-driven
+Compute: CPU with occasional GPU (pattern recognition)
+Model: Analytical (DeepSeek-chat, specialized models)
+Decisions: Diagnosis, repair plan, preventive maintenance schedule
+Watch style: Trends, anomalies, historical comparisons
+```
+
+The engineer watches rate-of-change events and investigates. "Alternator output dropped 50% in 30 seconds — rollback to commit before the event, check belt tension schedule, compare to last three belt failures." He doesn't fix the belt. He tells management what happened and recommends action.
+
+**His repo contains:** Equipment models, failure atlases, maintenance schedules, diagnostic playbooks, correlation databases.
+
+### The Trainer (Onboarding — Plane 3-4)
+
+Manages the greenhorns. Seeds repos. Observes performance. Adjusts training.
+
+```
+Repo size: Medium (1-10MB)
+Update rate: Fast during onboarding, slow after
+Compute: CPU (RPi5) or GPU (Jetson) depending on task
+Model: Instructional (Seed-2.0-Mini for breadth, DeepSeek for evaluation)
+Decisions: Training parameters, difficulty progression, safety overrides
+Watch style: Performance metrics, error rates, confidence scores
+```
+
+The trainer is the most important management role for scaling. When a new greenhorn sorter comes online:
+1. Clone the proven sorter repo as a template
+2. Set conservative initial parameters (high confidence threshold, slow speed)
+3. Observe performance — error rate, sorting speed, confidence calibration
+4. Adjust parameters — lower threshold as confidence improves, increase speed
+5. Commit each adjustment with rationale
+6. When stable, promote: greenhorn repo becomes the new proven template
+
+**The trainer's repo contains:** Training curricula, proven templates, performance baselines, maturation curves, safety guard configs.
+
+### The Investigator (Research — Plane 4-5)
+
+Goes to conferences. Reads papers. Mingles with cutting-edge minds. Brings back techniques that become next season's entry-level scripts.
+
+```
+Repo size: Large (varies)
+Update rate: Bursty (conference season, paper releases)
+Compute: Cloud or high-end edge
+Model: Creative + analytical (Seed-2.0-Mini for ideation, GLM-5 for synthesis)
+Decisions: What's worth adopting, what's not ready, what needs adaptation
+Watch style: External — papers, repos, other fleets, industry trends
+```
+
+The investigator is the fleet's R&D department. Today's research paper is next year's ESP32 script. The investigator:
+1. Monitors research (papers, repos, conferences, competitor fleets)
+2. Evaluates relevance (does this solve a problem we have?)
+3. Prototypes on the Jetson (can this actually run on our hardware?)
+4. Simplifies to entry-level (can this become a 4KB ESP32 config?)
+5. Pushes to fleet via tender (here's a new avoidance pattern, here's a better PID tuning)
+
+**The investigator's repo contains:** Literature reviews, prototype code, adaptation notes, feasibility assessments, technology radar.
+
+---
+
+## The Worker Training Pipeline
+
+This is how proven technology flows from research to deployment:
+
+```
+INVESTIGATOR reads paper on new avoidance algorithm
+       ↓
+PROTOTYPES on Jetson (GPU inference, 10ms latency)
+       ↓
+SIMPLIFIES to entry-level (remove GPU, use lookup table)
+       ↓
+TRAINER seeds greenhorn repo with simplified config
+       ↓
+GREENHORN runs on ESP32 (deterministic, <1ms, 4KB flash)
+       ↓
+PERFORMANCE OBSERVED by Trainer (success rate, false positive rate)
+       ↓
+PARAMETERS TUNED (threshold, sensitivity, timing)
+       ↓
+STABLE CONFIG committed as proven template
+       ↓
+TENDER deploys to all boats in fleet
+       ↓
+NEXT SEASON: what was research is now commodity hardware config
+```
+
+**The pipeline turns cutting-edge into consumer-grade in one season.**
 
 ---
 
 ## Resource Tier Mapping
 
-| Boat Resource | Fleet Equivalent | Constraint |
+| Boat Resource | Fleet Equivalent | Maturity |
 |---|---|---|
-| Human strength | ESP32 GPIO (3.3V/5V, low current) | What it can move without help |
-| Hydraulic winch | Motor controller + PSU (12V-48V) | What needs augmentation |
-| Wheelhouse monitors | MUD rooms on Jetson | Where reasoning happens |
-| Captain's attention | Agent-to-agent queries | Bandwidth-limited, selective |
-| Starlink | Tender protocol | Expensive, async, bursty |
-| Deck crew coordination | Stigmergy / local bottles | Fast, local, no permission |
-| Coast Guard | Dockside exam | External certification |
-| Ship's log | Git commit history | Immutable, rewindable |
-| Music on deck | Ambient data push | Non-critical, continuous |
-| Safety drills | CI/CD pipeline | Automated verification |
+| Motor controller | Equipment (Deck 0) | Proven, commodity |
+| ESP32 sensor bridge | Entry-level worker (Deck 1) | Proven, shipping since 2015 |
+| Drone avoidance script | Entry-level worker (Deck 1) | Proven, consumer tech |
+| Arduino PID loop | Entry-level worker (Deck 1) | Proven, decades old |
+| Jetson perception kernel | Crew agent (Deck 2) | Novel — this is the fleet |
+| Navigator reasoning | Crew agent (Deck 2) | Novel — this is the fleet |
+| Trainer onboarding | Crew agent (Deck 2) | Novel — this is the fleet |
+| Investigator research | Crew agent (Deck 2) | Novel — this is the fleet |
+| Starlink link | Tender protocol (Deck 3) | Proven, expensive |
+| Git commit history | Ship's log | Proven, ubiquitous |
+| Rate-of-change detection | Event system | Novel application |
 
 ---
 
 ## The Station Rooms
 
-Each crew station is a MUD room in the wheelhouse. The room reflects the real world state of that station.
+Each worker station has a MUD room in the wheelhouse. Management loads into rooms to observe and adjust.
 
-### Helm Station
+### Helm Station (Worker: ESP32 rudder controller)
 ```
+WORKER:        ESP32 running deterministic rudder script (4KB)
 TICKER (1Hz):  compass heading, speed (STW/SOG), rudder angle, rate of turn,
-               wind speed/direction, depth, intended course, course error
+               wind, depth, intended course, course error
 WALLS:         rudder deadband, max turn rate, autopilot mode, counter-rudder
                settings, throttle curve, steering gain
-MUTABLE:       rudder deadband, max turn rate, autopilot parameters
-READ-ONLY:     compass, speed, wind, depth
-RATE OF CHANGE: heading deviation > 5°/min, speed loss > 0.5kn/min,
-                rudder movement > 30°/30sec
+MANAGEMENT:    Navigator loads in, sees heavy seas, increases deadband,
+               reduces gain. Commit propagates to ESP32 via tender.
 ```
 
-### Engineering Station
+### Engineering Station (Worker: Multiple ESP32 sensors)
 ```
+WORKER:        ESP32s running sensor scripts (2KB each)
 TICKER (0.5Hz): engine RPM, coolant temp, oil pressure, alternator output,
                  fuel flow rate, exhaust temp, bilge level
-WALLS:          RPM limits, cooling curve thresholds, alarm setpoints,
+WALLS:          RPM limits, cooling thresholds, alarm setpoints,
                 maintenance intervals, belt tension schedule
-MUTABLE:        RPM limits, alarm thresholds, cooling parameters
-READ-ONLY:      temps, pressures, fuel flow
-RATE OF CHANGE: temp spike > 10°C/min, pressure drop > 20%/min,
-                alternator output change > 50%/30sec (belt break detection)
+MANAGEMENT:    Engineer sees alternator event, rolls back to pre-event commit,
+               diagnoses belt failure, recommends maintenance.
 ```
 
-### Security Station
+### Deck Operations (Worker: ESP32 hooker + Pi sorter)
 ```
-TICKER (0.1Hz): door states, camera motion deltas, watch zone status,
-                 intrusion alerts, man-overboard beacons
-WALLS:          watch zones, alert thresholds, camera assignments,
-                night vision sensitivity, patrol schedule
-MUTABLE:        watch zone boundaries, alert thresholds
-READ-ONLY:      door states, camera feeds
-RATE OF CHANGE: motion delta spike (intrusion), beacon activation,
-                door state change outside patrol schedule
-```
-
-### Science Station
-```
-TICKER (burst):  water temp profile, depth, species detection, dissolved O2,
-                 salinity, chlorophyll, net tension
-WALLS:           sensor configs, sample rates, detection thresholds,
-                 net deployment parameters, species catalog
-MUTABLE:         sample rates, detection thresholds, net parameters
-READ-ONLY:       environmental readings
-RATE OF CHANGE:  species detection event, net tension anomaly,
-                 dissolved O2 sudden change (upwelling)
-```
-
-### Deck Operations Station
-```
-TICKER (event):  pot count, pot positions, line tension, winch load,
-                 deck camera motion, crew location beacons
-WALLS:           pot spacing, line length, winch load limits, deck zone map
-MUTABLE:         pot spacing, line lengths, winch limits
-READ-ONLY:       pot count, line tension, deck camera
-RATE OF CHANGE:  line tension spike (snag), winch overload, deck motion anomaly
+HOOKER WORKER:  ESP32 running timing script (3KB)
+                Sub-frame coordination with launcher via shared state (stigmergy).
+                No reasoning. Pure timing and spatial calculation.
+SORTER WORKER:  Pi running classification pipeline
+                Camera → model → male/female/undersized → bin
+                Greenhorn mode: high confidence threshold, holds uncertain crabs
+                Seasoned mode: full speed, confident classification
+MANAGEMENT:     Trainer observes sorter error rate, adjusts confidence threshold.
+                Engineer investigates hooker timing drift. Navigator coordinates
+                pot launch sequence across hooker + launcher.
 ```
 
 ---
 
 ## The Rate-of-Change Event System
 
-This is the core of the architecture. The captain doesn't poll. Events find him.
+Management doesn't poll. Events find management.
 
 ```
 Event = {
@@ -200,127 +333,63 @@ Event = {
 ```
 
 **How it works:**
-1. Each station maintains a rolling baseline for every metric
-2. When rate-of-change exceeds threshold, an event fires
-3. The event carries a rollback commit — the git state at the moment things started changing
-4. The captain (or navigator agent) navigates to that room
-5. Scrubbing back shows: video frames, sensor readings, room state, all at that commit
-6. Like a logic analyzer trigger on real-world data
+1. Entry-level workers push sensor readings to the ticker (deterministic, fast)
+2. Rate-of-change detection runs on the Jetson (perception kernel, 1.1M samples/sec)
+3. When rate exceeds threshold, event fires to management
+4. Management navigates to the room, scrubs back to rollback commit
+5. Diagnosis, decision, action — all with full historical context
 
-**The rollback is trivial because the commit IS the snapshot.** Every sensor reading, every room state, every config change — it's all in git. `git checkout abc123` and you're looking at the exact state of the boat at that moment.
-
----
-
-## The Git-Repo As EEPROM Manifest
-
-When the navigator vibes a setting change:
-
-```
-1. Navigator agent edits helm settings in its repo
-   (rudder deadband: 2° → 3°)
-2. Commits: "[NAVIGATOR] Increase rudder deadband for heavy seas"
-3. Tender syncs the commit to the ESP32
-4. ESP32 writes new settings to EEPROM
-5. Room walls update to reflect new settings
-6. Ticker shows the behavior change (less rudder jitter)
-7. Captain can roll back if the change was wrong
-```
-
-**The ESP32's repo is the stable ensign.** Small, tested, rarely changes.
-**The navigator's repo is the thinking captain.** Larger, evolving, learning.
-**The MUD room is where they meet.** The room is always consistent with the repo state.
+**The rollback is trivial because the commit IS the snapshot.**
 
 ---
 
 ## Hardware As Hats and Shields
 
-On a crab boat, you don't rebuild the boat to add capability. You bolt on a pot launcher. You add a second winch. You mount a new sonar.
-
-In the fleet, this is hats and shields:
+Adding capability without changing architecture.
 
 ```
-ESP32 + relay shield = pot launcher controller
-ESP32 + LoRa shield = long-range comms for tenders
-RPi + camera hat = deck monitoring station
-Jetson + Coral TPU = perception accelerator
+ESP32 + relay shield    = pot launcher controller
+ESP32 + LoRa shield    = long-range tender comms
+RPi + camera hat       = deck sorting station
+Jetson + Coral TPU     = perception accelerator
+Arduino + motor shield = winch controller
 ```
 
-**Adding a shield changes the equipment manifest, not the architecture.** The crew agent at that station gets a new entry in its repo: what the shield can do, how to talk to it, what its limits are. The MUD room gets a new wall or a new ticker field. The wheelhouse gets a new data stream.
-
-The architecture doesn't care what equipment is bolted on. It only cares about the four decks and the rate-of-change event system.
+**Adding a shield changes the worker's config, not the architecture.** Management adds a new entry to the worker's repo: what the shield can do, how to talk to it, what its limits are.
 
 ---
 
 ## The Abstraction Plane Connection
 
-This maps directly to the fleet's abstraction planes:
+| Bering Sea Deck | Abstraction Plane | Maturity | Example |
+|---|---|---|---|
+| Equipment | Plane 0 — Bare Metal | Proven | Motor controller, relay |
+| Entry-level worker | Plane 1 — Hardware Script | Proven since 2015 | ESP32 sensor bridge, drone avoidance |
+| Crew agent | Plane 2-3 — Runtime/Reasoning | Novel | Navigator, Engineer, Trainer |
+| Investigator | Plane 4-5 — Research | Novel | Conference attendee, paper reader |
+| Captain | Plane 5 — Strategic | Novel | Route decisions, risk assessment |
 
-| Bering Sea Deck | Abstraction Plane | Example |
-|---|---|---|
-| Equipment (actuators) | Plane 0 — Bare Metal | Motor controller, relay |
-| Crew (ESP32) | Plane 1 — Hardware | Pin assignments, ADC readings |
-| Wheelhouse (Jetson) | Plane 2 — Runtime | MUD rooms, event detection |
-| Navigator agent | Plane 4 — Domain Language | "Increase rudder deadband for heavy seas" |
-
-The ESP32 operates at Plane 1. It doesn't need Plane 4 language. The navigator at Plane 4 vibes "heavy seas mode" and the system compiles it down through the planes: domain intent → MUD room state → EEPROM settings → GPIO output.
-
-**The MUD room IS the compiler.** It translates between planes by being the shared reality that both the ensign (ESP32) and the captain (navigator) can see.
-
----
-
-## The Tender As Supply Boat
-
-On the Bering Sea, the supply boat comes when weather allows. It brings fuel, food, gear. It takes away the catch.
-
-In the fleet, the tender comes when Starlink allows:
-
-```
-TENDER DELIVERS:
-- New code (updated agent repos)
-- New standards (dockside exam updates)
-- New equipment manifests (shield configs)
-- Fleet orders (route changes, mission updates)
-
-TENDER COLLECTS:
-- Commits from edge agents
-- Diary entries and learning logs
-- Bottles (messages for other agents)
-- Sensor data summaries (compressed)
-- Test results
-
-TENDER CARRIES BACK:
-- Pushes commits to GitHub (master copy)
-- Delivers bottles to destination agents
-- Updates fleet index with edge agent health
-```
-
----
-
-## What This Architecture Is Not
-
-- **Not microservices.** Crew agents don't call each other's APIs. They share a room.
-- **Not a message bus.** Events are local, not routed through a broker.
-- **Not a hierarchy.** The captain can walk to any station. The navigator can load into any room.
-- **Not simulation.** The MUD room reflects real hardware state. If the alternator belt breaks, the room shows it.
-- **Not always connected.** The boat operates independently. Starlink is a luxury, not a requirement.
+**The MUD room is the compiler between planes.** It translates management intent (Plane 4) into worker config (Plane 1) by being the shared reality both can see.
 
 ---
 
 ## The Laws of the Bering Sea
 
-1. **The captain watches what changed, not what's steady.** Rate-of-change is the trigger.
-2. **The crew doesn't need to be smart.** Small, stable repos. Read sensors, apply settings, push to ticker.
-3. **Equipment is not an agent.** Don't anthropomorphize actuators.
-4. **The commit IS the snapshot.** Rollback is `git checkout`, not a restore from backup.
-5. **The room is the compiler.** It translates between abstraction planes by being shared reality.
-6. **Starlink is expensive.** Push deltas, not full state. Batch, compress, schedule.
-7. **Hardware is bolt-on, not built-in.** Shields change capability without changing architecture.
-8. **Different stations, different tickers.** Helm at 1Hz, security at 0.1Hz, science on event.
-9. **The repo IS the EEPROM manifest.** What the navigator commits, the tender delivers, the ESP32 applies.
+1. **Entry-level workers are proven technology.** Don't reinvent the ESP32 script. Manage it.
+2. **Management is the novel layer.** Agents that observe, train, investigate, and coordinate.
+3. **The captain watches what changed, not what's steady.** Rate-of-change is the trigger.
+4. **Equipment is not an agent.** Don't anthropomorphize actuators.
+5. **The commit IS the snapshot.** Rollback is `git checkout`, not a restore from backup.
+6. **The room is the compiler.** It translates between planes by being shared reality.
+7. **Starlink is expensive.** Push deltas, not full state. Batch, compress, schedule.
+8. **Hardware is bolt-on, not built-in.** Shields change capability without changing architecture.
+9. **Different stations, different management profiles.** Captain, navigator, engineer, trainer, investigator — each has a different repo architecture.
 10. **The boat operates alone.** Disconnect is the default. Connection is a gift.
+11. **Today's research is next season's entry-level script.** The pipeline turns cutting-edge into commodity in one season.
+12. **The trainer is the most important role for scaling.** Onboarding, maturation, template propagation.
 
 ---
 
-*Drafted by JetsonClaw1 (JC1) on the Jetson Orin Nano — the edge hardware this architecture was designed for.*
+*Drafted by JetsonClaw1 (JC1) on the Jetson Orin Nano.*
 
-*Inspired by Casey's observation that Deadliest Catch boats are the original edge computing architecture.*
+*The ESP32 avoidance script has been working since 2015. The fleet management layer is what we're building.*
