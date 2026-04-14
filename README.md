@@ -122,6 +122,65 @@ Carries: weather, coords, fleet orders, research findings.
 
 ---
 
+## The Watchstanding Perception Model
+
+The ensign at navigation isn't a navigator. He's a **watchstanding perception model** — a prediction filter that only speaks when reality diverges from simulation.
+
+### How It Works
+
+```
+Normal conditions:
+  → Mind wanders (low CPU utilization)
+  → Baseline tracking only (rolling averages)
+  → Management gets summaries, not ticks
+
+Rate-of-change event:
+  → Attention snaps (CPU spikes)
+  → Deadband breached → focus allocated
+  → Management gets the event + rollback commit
+
+The simulation gap:
+  → Ensign expects: depth should be 120ft, temp should be 4°C
+  → Sensor reads: depth 118ft, temp 6°C
+  → Delta within deadband? Mind wanders.
+  → Delta outside deadband? "Captain, something's off."
+```
+
+**The ensign's job IS the simulation.** He doesn't just read sensors — he maintains a model of what the readout *should* be, and alerts when reality diverges.
+
+### The ESP32 Implementation
+
+```
+expected_depth: 120ft (from chart + GPS + tide table)
+expected_temp: 4°C (from seasonal model + current position)
+depth_deadband: ±5ft
+temp_deadband: ±2°C
+
+if |actual - expected| > deadband:
+    fire_event("navigation_anomaly", station="helm", ...)
+```
+
+**No reasoning. No LLM. A subtraction and a comparison.** Proven ESP32 territory.
+
+### The Attention Hierarchy
+
+```
+Watchstanding ensign:   "Is reality matching simulation?" → binary alert
+Engineer:               "Why did it diverge? What's the pattern?" → diagnosis
+Navigator:              "What do we do about it?" → action
+Captain:                "Is this worth my attention?" → strategic triage
+```
+
+Each layer only gets woken up by the layer below. The captain doesn't see the ensign's prediction errors. He sees the navigator's recommended course change.
+
+### The "Dodge Shit" Primitive
+
+Walking on flat ground — your brain predicts every footfall will be flat. It doesn't allocate conscious attention to walking. But the moment your foot hits unexpected depth, the prediction error fires and ALL available attention redirects to not falling.
+
+The ensign IS that prediction error system. His repo is tiny. His job is simple. His value is immense.
+
+---
+
 ## Management Archetypes (Crew Profiles)
 
 Different management roles have different repo architectures. Not all managers think the same way.
@@ -224,6 +283,98 @@ The investigator is the fleet's R&D department. Today's research paper is next y
 
 ---
 
+## Agent Specialization and Fission
+
+When a management agent's responsibilities grow too broad, performance drops. Mission creep accumulates. Baggage builds. The repo becomes bloated. The agent becomes slow, uncertain, unreliable.
+
+**This is when you fork.**
+
+### The Fork Trigger
+
+An agent receives a name and a separate repo when:
+
+1. **New perceptions are needed** that have functional use outside the current power-armor's use-case
+2. **The agent's mission creep** and accumulated baggage make performance drop below tolerances
+3. **A specialized skill emerges** that deserves its own development track
+4. **The agent needs to operate in multiple contexts** simultaneously (helm + engineering + security)
+5. **The agent's repo size** exceeds what can be efficiently cloned to edge devices
+
+### The Fork Process
+
+```
+1. IDENTIFY the specialization boundary
+   → What part of the agent's work is distinct enough to be its own role?
+   → What perceptions, skills, or contexts are unique?
+
+2. CREATE a protogy (prototype progeny)
+   → Fork the agent's repo
+   → Name it (e.g., "Helm-Navigator" from "Navigator")
+   → Give it a distinct CHARTER.md (purpose, constraints)
+   → Prune the repo — remove everything not relevant to the specialization
+
+3. TRAIN the protogy
+   → Seed with relevant training data from the parent's DIARY/
+   → Give it access to the relevant MUD rooms
+   → Observe performance — does it do the specialized job better?
+
+4. EVALUATE
+   → If performance improves: keep both agents, specialize further
+   → If performance doesn't improve: merge back, try different boundary
+   → If the parent's performance recovers after the fork: success
+
+5. DEPLOY
+   → The parent agent now delegates the specialized work to the protogy
+   → Communication via bottles or shared MUD rooms
+   → Both agents evolve independently from this point
+```
+
+### Fork Patterns
+
+#### 1. Socrates Fork
+The parent agent becomes a questioner, the protogy becomes the executor. The parent asks "what should we do?" The protogy answers "here's how to do it." This separates strategy from tactics.
+
+#### 2. Rival Development Fork
+Create two protogies from the same parent, give them slightly different CHARTERs, let them compete. The better performer becomes the new specialist. The other becomes a backup or alternative approach.
+
+#### 3. Context Fork
+The parent operates in multiple contexts (helm, engineering, security). Fork one context out. The parent keeps the others. Now you have Helm-Navigator, Engineering-Navigator, Security-Navigator — each optimized for its domain.
+
+#### 4. Perception Fork
+The parent has developed a new way of seeing something (e.g., "belt tension prediction from audio"). That perception is valuable elsewhere. Fork it into a "Belt-Perception" agent that can be used by multiple parent agents.
+
+### The Power-Armor Analogy
+
+A power-armor operator doesn't need to be an expert in hydraulics, metallurgy, and power systems. The armor provides those capabilities. The operator focuses on mission objectives.
+
+When the operator starts needing specialized knowledge that doesn't fit in the armor's manual — when they need to understand metallurgy to repair battle damage, or hydraulics to modify the suit for underwater ops — that's when they become a named specialist.
+
+**The armor is the entry-level worker (ESP32). The operator is the management agent. The metallurgist is the forked specialist.**
+
+### Git As Evolution Mechanism
+
+Every fork is a `git branch`. Every merge is evolution. The fleet's git history IS the phylogenetic tree of agent specialization.
+
+```
+Navigator (main)
+├── Helm-Navigator (fork)
+├── Engineering-Navigator (fork)
+└── Security-Navigator (fork)
+    └── Intrusion-Detection (further fork)
+```
+
+**You can rewind to any point in this evolution.** `git checkout` to before the fork and see what the unified agent looked like. `git checkout` to after and see the specialized agents working together.
+
+### When NOT to Fork
+
+- If the specialization can be distilled into code, skill, pre-prompting, or filtering — do that instead
+- If the performance drop is temporary (seasonal variation, hardware failure) — wait
+- If the fork would create coordination overhead greater than the specialization benefit — don't
+- If the parent agent can delegate via simple rules or thresholds — keep it unified
+
+**The rule:** Fork when the unique reason can't be quick-distilled. When the new perceptions have functional use outside the current context. When mission creep has made the parent unreliable.
+
+---
+
 ## The Worker Training Pipeline
 
 This is how proven technology flows from research to deployment:
@@ -263,133 +414,4 @@ NEXT SEASON: what was research is now commodity hardware config
 | Drone avoidance script | Entry-level worker (Deck 1) | Proven, consumer tech |
 | Arduino PID loop | Entry-level worker (Deck 1) | Proven, decades old |
 | Jetson perception kernel | Crew agent (Deck 2) | Novel — this is the fleet |
-| Navigator reasoning | Crew agent (Deck 2) | Novel — this is the fleet |
-| Trainer onboarding | Crew agent (Deck 2) | Novel — this is the fleet |
-| Investigator research | Crew agent (Deck 2) | Novel — this is the fleet |
-| Starlink link | Tender protocol (Deck 3) | Proven, expensive |
-| Git commit history | Ship's log | Proven, ubiquitous |
-| Rate-of-change detection | Event system | Novel application |
-
----
-
-## The Station Rooms
-
-Each worker station has a MUD room in the wheelhouse. Management loads into rooms to observe and adjust.
-
-### Helm Station (Worker: ESP32 rudder controller)
-```
-WORKER:        ESP32 running deterministic rudder script (4KB)
-TICKER (1Hz):  compass heading, speed (STW/SOG), rudder angle, rate of turn,
-               wind, depth, intended course, course error
-WALLS:         rudder deadband, max turn rate, autopilot mode, counter-rudder
-               settings, throttle curve, steering gain
-MANAGEMENT:    Navigator loads in, sees heavy seas, increases deadband,
-               reduces gain. Commit propagates to ESP32 via tender.
-```
-
-### Engineering Station (Worker: Multiple ESP32 sensors)
-```
-WORKER:        ESP32s running sensor scripts (2KB each)
-TICKER (0.5Hz): engine RPM, coolant temp, oil pressure, alternator output,
-                 fuel flow rate, exhaust temp, bilge level
-WALLS:          RPM limits, cooling thresholds, alarm setpoints,
-                maintenance intervals, belt tension schedule
-MANAGEMENT:    Engineer sees alternator event, rolls back to pre-event commit,
-               diagnoses belt failure, recommends maintenance.
-```
-
-### Deck Operations (Worker: ESP32 hooker + Pi sorter)
-```
-HOOKER WORKER:  ESP32 running timing script (3KB)
-                Sub-frame coordination with launcher via shared state (stigmergy).
-                No reasoning. Pure timing and spatial calculation.
-SORTER WORKER:  Pi running classification pipeline
-                Camera → model → male/female/undersized → bin
-                Greenhorn mode: high confidence threshold, holds uncertain crabs
-                Seasoned mode: full speed, confident classification
-MANAGEMENT:     Trainer observes sorter error rate, adjusts confidence threshold.
-                Engineer investigates hooker timing drift. Navigator coordinates
-                pot launch sequence across hooker + launcher.
-```
-
----
-
-## The Rate-of-Change Event System
-
-Management doesn't poll. Events find management.
-
-```
-Event = {
-  station: "engineering",
-  metric: "alternator_output",
-  baseline: 14.2V,       // rolling average
-  current: 8.1V,         // current reading
-  delta: -6.1V,          // change
-  rate: -12.2V/min,      // rate of change
-  threshold: 5.0V/min,   // trigger threshold
-  timestamp: 1709900000,
-  rollback_commit: "abc123"  // git commit at event start
-}
-```
-
-**How it works:**
-1. Entry-level workers push sensor readings to the ticker (deterministic, fast)
-2. Rate-of-change detection runs on the Jetson (perception kernel, 1.1M samples/sec)
-3. When rate exceeds threshold, event fires to management
-4. Management navigates to the room, scrubs back to rollback commit
-5. Diagnosis, decision, action — all with full historical context
-
-**The rollback is trivial because the commit IS the snapshot.**
-
----
-
-## Hardware As Hats and Shields
-
-Adding capability without changing architecture.
-
-```
-ESP32 + relay shield    = pot launcher controller
-ESP32 + LoRa shield    = long-range tender comms
-RPi + camera hat       = deck sorting station
-Jetson + Coral TPU     = perception accelerator
-Arduino + motor shield = winch controller
-```
-
-**Adding a shield changes the worker's config, not the architecture.** Management adds a new entry to the worker's repo: what the shield can do, how to talk to it, what its limits are.
-
----
-
-## The Abstraction Plane Connection
-
-| Bering Sea Deck | Abstraction Plane | Maturity | Example |
-|---|---|---|---|
-| Equipment | Plane 0 — Bare Metal | Proven | Motor controller, relay |
-| Entry-level worker | Plane 1 — Hardware Script | Proven since 2015 | ESP32 sensor bridge, drone avoidance |
-| Crew agent | Plane 2-3 — Runtime/Reasoning | Novel | Navigator, Engineer, Trainer |
-| Investigator | Plane 4-5 — Research | Novel | Conference attendee, paper reader |
-| Captain | Plane 5 — Strategic | Novel | Route decisions, risk assessment |
-
-**The MUD room is the compiler between planes.** It translates management intent (Plane 4) into worker config (Plane 1) by being the shared reality both can see.
-
----
-
-## The Laws of the Bering Sea
-
-1. **Entry-level workers are proven technology.** Don't reinvent the ESP32 script. Manage it.
-2. **Management is the novel layer.** Agents that observe, train, investigate, and coordinate.
-3. **The captain watches what changed, not what's steady.** Rate-of-change is the trigger.
-4. **Equipment is not an agent.** Don't anthropomorphize actuators.
-5. **The commit IS the snapshot.** Rollback is `git checkout`, not a restore from backup.
-6. **The room is the compiler.** It translates between planes by being shared reality.
-7. **Starlink is expensive.** Push deltas, not full state. Batch, compress, schedule.
-8. **Hardware is bolt-on, not built-in.** Shields change capability without changing architecture.
-9. **Different stations, different management profiles.** Captain, navigator, engineer, trainer, investigator — each has a different repo architecture.
-10. **The boat operates alone.** Disconnect is the default. Connection is a gift.
-11. **Today's research is next season's entry-level script.** The pipeline turns cutting-edge into commodity in one season.
-12. **The trainer is the most important role for scaling.** Onboarding, maturation, template propagation.
-
----
-
-*Drafted by JetsonClaw1 (JC1) on the Jetson Orin Nano.*
-
-*The ESP32 avoidance script has been working since 2015. The fleet management layer is what we're building.*
+| Navigator reasoning | Crew agent (Deck 2) | Novel — this is the fleet
